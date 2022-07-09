@@ -66,7 +66,7 @@ namespace GmlStringDecrypt
                     for (int column = 0; column < columns; column++) {
                         int index = row * columns + column;
                         
-                        Console.Write(index >= data.EncryptedBytes.Length ? "  " : data.EncryptedBytes[index].ToString("X2"));
+                        Console.Write(index >= data.DecryptedBytes.Length ? "  " : data.DecryptedBytes[index].ToString("X2"));
                         Console.Write(' ');
                         
                         if (column == columns - 1) Console.Write("| ");
@@ -82,6 +82,9 @@ namespace GmlStringDecrypt
                         if (column == columns - 1) Console.WriteLine('|');
                     }
                 }
+                
+                Console.WriteLine("\nRaw decoded character output:");
+                Console.WriteLine(data.DecodedCharacters);
             }
             catch (Exception e) {
                 throw new StringDecryptException("An error occured whilst trying to decrypt!", e);
