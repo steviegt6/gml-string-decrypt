@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using GmlStringDecrypt.Exceptions;
+using GmlStringDecrypt.Readers;
 using Mono.Cecil;
 using MissingFieldException = GmlStringDecrypt.Exceptions.MissingFieldException;
 
@@ -23,6 +26,7 @@ namespace GmlStringDecrypt
             ModuleDefinition def;
             StringDecrypt decrypt;
             StringDecrypt.DecryptData data;
+            List<DecodedStringSpliceReader.DecodedStringSplice> spliceMethods;
 
             try {
                 def = ModuleDefinition.ReadModule(args[0]);
@@ -91,7 +95,16 @@ namespace GmlStringDecrypt
             }
 
             try {
-                decrypt.Rewrite(data);
+                spliceMethods = decrypt.ResolveSpliceMethods().ToList();
+                
+                Console.WriteLine($"\nResolved {spliceMethods.Count} splice methods.");
+            }
+            catch (Exception e) {
+                throw new ResolveStringSpliceException("An error occured whilst reading methods en masse for decoded string splicing!", e);
+            }
+
+            try {
+                decrypt.Rewrite(data, spliceMethods);
             }
             catch (Exception e) {
                 throw new StringRewriteException("An error occured whilst trying to rewrite the type!", e);

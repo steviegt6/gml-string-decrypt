@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using GmlStringDecrypt.Exceptions;
+using GmlStringDecrypt.Readers;
+using GmlStringDecrypt.Util;
 using Mono.Cecil;
 using MonoMod.Cil;
 using MissingFieldException = GmlStringDecrypt.Exceptions.MissingFieldException;
@@ -29,7 +32,15 @@ namespace GmlStringDecrypt
             return new DecryptData(bytes, or, decryptedBytes, chars);
         }
 
-        public void Rewrite(DecryptData data) {
+        public IEnumerable<DecodedStringSpliceReader.DecodedStringSplice> ResolveSpliceMethods() {
+            foreach (MethodDefinition method in DecryptType.Methods) {
+                DecodedStringSpliceReader.DecodedStringSplice? splice = method.ReadMethod(new DecodedStringSpliceReader());
+
+                if (splice.HasValue) yield return splice.Value;
+            }
+        }
+
+        public void Rewrite(DecryptData data, List<DecodedStringSpliceReader.DecodedStringSplice> spliceMethods) {
         }
 
         private byte[] GetByteArray() {
