@@ -13,7 +13,8 @@ namespace GmlStringDecrypt
          * 1 - output path
          * 2 - fully qualified name to string crypto class
          */
-        public static void Main(string[] args) {
+        public static void Main(string[] args) 
+        {
 
             if (args.Length != 3) throw new ArgumentException("Provided arguments are not equal to three!");
             if (!File.Exists(args[0])) throw new FileNotFoundException("Input file not found!");
@@ -43,7 +44,8 @@ namespace GmlStringDecrypt
                .Execute();
         }
 
-        private static TryCatchFinally Safely(Action tryAction) {
+        private static TryCatchFinally Safely(Action tryAction) 
+        {
             return new TryCatchFinally().Try(tryAction);
         }
     }
