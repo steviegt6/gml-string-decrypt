@@ -10,34 +10,23 @@ namespace GmlStringDecrypt
 {
     public sealed class StringDecrypt
     {
-        public readonly record struct DecryptData(byte[] EncryptedBytes, byte[] DecryptedBytes);
+        public readonly record struct DecryptData(byte[] EncryptedBytes, uint Or, byte[] DecryptedBytes, string DecodedCharacters);
 
-        private readonly ModuleDefinition Module;
         private readonly TypeDefinition DecryptType;
         private readonly MethodDefinition StaticConstructor;
 
         public StringDecrypt(ModuleDefinition module, string decryptClass) {
-            Module = module;
-            DecryptType = Module.GetType(decryptClass) ?? throw new MissingTypeException("Module did not contain type: " + decryptClass);
+            DecryptType = module.GetType(decryptClass) ?? throw new MissingTypeException("Module did not contain type: " + decryptClass);
             StaticConstructor = DecryptType.Methods.FirstOrDefault(x => x.Name == ".cctor") ?? throw new MissingMethodException("Type did not contain .cctor: " + decryptClass);
         }
 
         public DecryptData Decrypt() {
-            Console.WriteLine("Beginning decryption of strings in class: " + DecryptType.FullName);
             byte[] bytes = GetByteArray();
-            Console.WriteLine();
-            Console.WriteLine("Encrypted bytes length: " + bytes.Length);
-            Console.WriteLine("Encrypted bytes content: " + string.Join(',',  bytes));
             uint or = GetOr();
             byte[] decryptedBytes = DecryptBytes(bytes, or);
             string chars = ConvertBytes(decryptedBytes);
-            Console.WriteLine();
-            Console.WriteLine("Logical exclusive OR: " + or);
-            Console.WriteLine("Decrypted bytes length: " + decryptedBytes.Length);
-            Console.WriteLine("Decrypted bytes content: " + string.Join(',',  decryptedBytes));
-            Console.WriteLine("Readable character decoding: " + chars);
-            
-            return new DecryptData();
+
+            return new DecryptData(bytes, or, decryptedBytes, chars);
         }
 
         public void Rewrite(DecryptData data) {
