@@ -1,0 +1,1 @@
+Tools for decrypting the obfuscated strings in GameMaker's IDE.dll.
