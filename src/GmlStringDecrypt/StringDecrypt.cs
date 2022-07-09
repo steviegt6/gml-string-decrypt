@@ -16,10 +16,12 @@ namespace GmlStringDecrypt
     {
         public readonly record struct DecryptData(byte[] EncryptedBytes, uint Or, byte[] DecryptedBytes, string DecodedCharacters);
 
+        private readonly ModuleDefinition Module;
         private readonly TypeDefinition DecryptType;
         private readonly MethodDefinition StaticConstructor;
 
         public StringDecrypt(ModuleDefinition module, string decryptClass) {
+            Module = module;
             DecryptType = module.GetType(decryptClass) ?? throw new MissingTypeException("Module did not contain type: " + decryptClass);
             StaticConstructor = DecryptType.Methods.FirstOrDefault(x => x.Name == ".cctor") ?? throw new MissingMethodException("Type did not contain .cctor: " + decryptClass);
         }
@@ -42,6 +44,8 @@ namespace GmlStringDecrypt
         }
 
         public void Rewrite(DecryptData data, List<DecodedStringSpliceReader.DecodedStringSplice> spliceMethods) {
+            Dictionary<string, string> map = new();
+            
             foreach (DecodedStringSpliceReader.DecodedStringSplice splice in spliceMethods) {
                 ILCursor c = new(new ILContext(splice.Method));
                 c.GotoNext(MoveType.Before, x => x.MatchRet());
@@ -56,6 +60,42 @@ namespace GmlStringDecrypt
                     c.Instrs.Clear(); // Erase method body.
                     c.Emit(OpCodes.Ldstr, val); // Push the string value.
                     c.Emit(OpCodes.Ret); // Return the value.
+                }
+
+                if (Program.ReplaceCallsWithLdstrOpcodes) {
+                    map.Add(splice.Method.FullName, val);
+                }
+            }
+
+            if (Program.ReplaceCallsWithLdstrOpcodes) {
+                static void RecurseType(TypeDefinition type, ICollection<TypeDefinition> types) {
+                    types.Add(type);
+
+                    if (!type.HasNestedTypes) return;
+                    foreach (TypeDefinition nested in type.NestedTypes) {
+                        RecurseType(nested, types);
+                    }
+                }
+                
+                ICollection<TypeDefinition> types = new List<TypeDefinition>();
+                foreach (TypeDefinition type in Module.Types) {
+                    RecurseType(type, types);
+                }
+
+                foreach (TypeDefinition type in types) {
+                    foreach (MethodDefinition method in type.Methods) {
+                        if (method.Body is null) continue;
+                        
+                        ILCursor c = new(new ILContext(method));
+                        MethodReference? methodRef = null;
+                        while (c.TryGotoNext(MoveType.Before, x => x.MatchCall(out methodRef))) {
+                            if (methodRef is null) continue;
+                            if (!map.TryGetValue(methodRef.FullName, out string? val)) continue;
+                            
+                            c.Remove();
+                            c.Emit(OpCodes.Ldstr, val);
+                        }
+                    }
                 }
             }
         }

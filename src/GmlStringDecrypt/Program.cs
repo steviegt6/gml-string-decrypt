@@ -13,6 +13,9 @@ namespace GmlStringDecrypt
     {
         // TODO: Config instead of this.
         public static bool PopValueInsteadOfErasingMethodBody = false;
+
+        public static bool ReplaceCallsWithLdstrOpcodes = true;
+        
         /*
          * 0 - input path
          * 1 - output path
