@@ -6,6 +6,7 @@ using GmlStringDecrypt.Exceptions;
 using GmlStringDecrypt.Readers;
 using GmlStringDecrypt.Util;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MissingFieldException = GmlStringDecrypt.Exceptions.MissingFieldException;
 
@@ -41,6 +42,13 @@ namespace GmlStringDecrypt
         }
 
         public void Rewrite(DecryptData data, List<DecodedStringSpliceReader.DecodedStringSplice> spliceMethods) {
+            foreach (DecodedStringSpliceReader.DecodedStringSplice splice in spliceMethods) {
+                ILCursor c = new(new ILContext(splice.Method));
+                c.GotoNext(MoveType.Before, x => x.MatchRet());
+
+                c.Emit(OpCodes.Pop); // Pop normal value off the stack, we don't care about it.
+                c.Emit(OpCodes.Ldstr, data.DecodedCharacters.Substring(splice.StartPosition, splice.SpliceLength)); // Push the string value.
+            }
         }
 
         private byte[] GetByteArray() {

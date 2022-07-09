@@ -29,7 +29,16 @@ namespace GmlStringDecrypt
             List<DecodedStringSpliceReader.DecodedStringSplice> spliceMethods;
 
             try {
-                def = ModuleDefinition.ReadModule(args[0]);
+                ReaderParameters readerParams = new()
+                {
+                    AssemblyResolver = new DefaultAssemblyResolver()
+                };
+                
+                if (readerParams.AssemblyResolver is BaseAssemblyResolver baseResolver) {
+                    baseResolver.AddSearchDirectory(Path.GetDirectoryName(args[0]));
+                }
+                
+                def = ModuleDefinition.ReadModule(args[0], readerParams);
             }
             catch (Exception e) {
                 throw new ModuleLoadException("An error occured whilst trying to read the module file!", e);
@@ -95,9 +104,21 @@ namespace GmlStringDecrypt
             }
 
             try {
-                spliceMethods = decrypt.ResolveSpliceMethods().ToList();
+                spliceMethods = decrypt.ResolveSpliceMethods().OrderBy(x => x.CacheAccessIndex).ToList();
                 
-                Console.WriteLine($"\nResolved {spliceMethods.Count} splice methods.");
+                Console.WriteLine($"\nResolved {spliceMethods.Count} splice methods:");
+
+                foreach (DecodedStringSpliceReader.DecodedStringSplice splice in spliceMethods) {
+                    StringBuilder sb = new();
+                    sb.Append($" [{splice.CacheAccessIndex}]");
+                    sb.Append(' ', 3 - splice.CacheAccessIndex.ToString().Length);
+                    sb.Append($" = {splice.StartPosition}");
+                    sb.Append(' ', 4 - splice.StartPosition.ToString().Length);
+                    sb.Append($" -> {splice.StartPosition + splice.SpliceLength}");
+                    sb.Append(' ', 4 - (splice.StartPosition + splice.SpliceLength).ToString().Length);
+                    sb.Append($" (+{splice.SpliceLength})");
+                    Console.WriteLine(sb.ToString());
+                }
             }
             catch (Exception e) {
                 throw new ResolveStringSpliceException("An error occured whilst reading methods en masse for decoded string splicing!", e);
@@ -105,10 +126,23 @@ namespace GmlStringDecrypt
 
             try {
                 decrypt.Rewrite(data, spliceMethods);
+                Console.WriteLine("\nRewrote methods.");
             }
             catch (Exception e) {
                 throw new StringRewriteException("An error occured whilst trying to rewrite the type!", e);
             }
+
+            try {
+                def.Write(args[1], new WriterParameters()
+                {
+                    
+                });
+                Console.WriteLine($"\nWrote modified module to disk at: {args[1]}");
+            }
+            catch (Exception e) {
+                throw new ModuleWriteException("An error occured whilst trying to write the modified module to disk!", e);
+            }
+            
         }
     }
 }
