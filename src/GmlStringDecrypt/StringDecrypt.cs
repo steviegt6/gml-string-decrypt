@@ -46,8 +46,17 @@ namespace GmlStringDecrypt
                 ILCursor c = new(new ILContext(splice.Method));
                 c.GotoNext(MoveType.Before, x => x.MatchRet());
 
-                c.Emit(OpCodes.Pop); // Pop normal value off the stack, we don't care about it.
-                c.Emit(OpCodes.Ldstr, data.DecodedCharacters.Substring(splice.StartPosition, splice.SpliceLength)); // Push the string value.
+                string val = data.DecodedCharacters.Substring(splice.StartPosition, splice.SpliceLength);
+                
+                if (Program.PopValueInsteadOfErasingMethodBody) {
+                    c.Emit(OpCodes.Pop); // Pop normal value off the stack, we don't care about it.
+                    c.Emit(OpCodes.Ldstr, val); // Push the string value.
+                }
+                else {
+                    c.Instrs.Clear(); // Erase method body.
+                    c.Emit(OpCodes.Ldstr, val); // Push the string value.
+                    c.Emit(OpCodes.Ret); // Return the value.
+                }
             }
         }
 

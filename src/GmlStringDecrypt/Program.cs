@@ -6,12 +6,13 @@ using System.Text;
 using GmlStringDecrypt.Exceptions;
 using GmlStringDecrypt.Readers;
 using Mono.Cecil;
-using MissingFieldException = GmlStringDecrypt.Exceptions.MissingFieldException;
 
 namespace GmlStringDecrypt
 {
     public static class Program
     {
+        // TODO: Config instead of this.
+        public static bool PopValueInsteadOfErasingMethodBody = false;
         /*
          * 0 - input path
          * 1 - output path
